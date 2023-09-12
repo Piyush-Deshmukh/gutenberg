@@ -24,8 +24,9 @@ export const SYNC_TYPES = {
 /**
  * Internal dependencies
  */
-import { store } from '../store';
+import { store as patternsStore } from '../store';
 import CategorySelector from './category-selector';
+import { unlock } from '../lock-unlock';
 
 export default function CreatePatternModal( {
 	onSuccess,
@@ -37,7 +38,7 @@ export default function CreatePatternModal( {
 	const [ syncType, setSyncType ] = useState( SYNC_TYPES.full );
 	const [ categories, setCategories ] = useState( [] );
 	const [ title, setTitle ] = useState( '' );
-	const { createPattern } = useDispatch( store );
+	const { createPattern } = unlock( useDispatch( patternsStore ) );
 
 	const { createErrorNotice } = useDispatch( noticesStore );
 	async function onCreate( patternTitle, sync ) {
