@@ -61,7 +61,8 @@
 				"textTransform": true
 			}
 		},
-		"__experimentalSlashInserter": true
+		"__experimentalSlashInserter": true,
+		"__experimentalMetadata": true
 	},
 	"editorStyle": "wp-block-heading-editor",
 	"style": "wp-block-heading"
