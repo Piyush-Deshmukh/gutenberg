@@ -3,7 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
-import { useDispatch } from '@wordpress/data';
+import { useDispatch, useSelect } from '@wordpress/data';
 import {
 	Button,
 	MenuItem,
@@ -16,9 +16,13 @@ import { store as coreStore } from '@wordpress/core-data';
 import { store as noticesStore } from '@wordpress/notices';
 import { decodeEntities } from '@wordpress/html-entities';
 
-export default function RenameMenuItem( { item, onClose } ) {
-	const title = decodeEntities( item.title.rendered );
-	const [ editedTitle, setEditedTitle ] = useState( title );
+export default function RenameMenuItem( { postType, postId, onClose } ) {
+	const record = useSelect(
+		( select ) =>
+			select( coreStore ).getEntityRecord( 'postType', postType, postId ),
+		[ postType, postId ]
+	);
+	const [ editedTitle, setEditedTitle ] = useState( '' );
 	const [ isModalOpen, setIsModalOpen ] = useState( false );
 
 	const {
@@ -27,8 +31,11 @@ export default function RenameMenuItem( { item, onClose } ) {
 	} = useDispatch( coreStore );
 	const { createSuccessNotice, createErrorNotice } =
 		useDispatch( noticesStore );
+	const isTemplate =
+		record?.type === 'wp_template' || record?.type === 'wp_template_part';
+	const isUserPattern = record?.type === 'wp_block';
 
-	if ( item.type === 'wp_template' && ! item.is_custom ) {
+	if ( isTemplate && ! record.is_custom && isUserPattern ) {
 		return null;
 	}
 
@@ -36,7 +43,7 @@ export default function RenameMenuItem( { item, onClose } ) {
 		event.preventDefault();
 
 		try {
-			await editEntityRecord( 'postType', item.type, item.id, {
+			await editEntityRecord( 'postType', record.type, record.id, {
 				title: editedTitle,
 			} );
 
@@ -48,25 +55,28 @@ export default function RenameMenuItem( { item, onClose } ) {
 			// Persist edited entity.
 			await saveSpecifiedEntityEdits(
 				'postType',
-				item.type,
-				item.id,
+				postType,
+				postId,
 				[ 'title' ], // Only save title to avoid persisting other edits.
 				{
 					throwOnError: true,
 				}
 			);
 
+			// @TODO Should account for patterns.
 			createSuccessNotice(
-				template.type === 'wp_template'
+				postType === 'wp_template'
 					? __( 'Template renamed.' )
 					: __( 'Template part renamed.' ),
 				{
 					type: 'snackbar',
+					id: 'template-rename-success',
 				}
 			);
 		} catch ( error ) {
+			// @TODO Should account for patterns.
 			const fallbackErrorMessage =
-				template.type === 'wp_template'
+				postType === 'wp_template'
 					? __( 'An error occurred while renaming the template.' )
 					: __(
 							'An error occurred while renaming the template part.'
@@ -85,7 +95,11 @@ export default function RenameMenuItem( { item, onClose } ) {
 			<MenuItem
 				onClick={ () => {
 					setIsModalOpen( true );
-					setEditedTitle( title );
+					setEditedTitle(
+						decodeEntities(
+							record?.title?.rendered || record?.title?.raw
+						)
+					);
 				} }
 			>
 				{ __( 'Rename' ) }
@@ -95,6 +109,7 @@ export default function RenameMenuItem( { item, onClose } ) {
 					title={ __( 'Rename' ) }
 					onRequestClose={ () => {
 						setIsModalOpen( false );
+						onClose();
 					} }
 					overlayClassName="edit-site-list__rename-modal"
 				>
@@ -113,6 +128,7 @@ export default function RenameMenuItem( { item, onClose } ) {
 									variant="tertiary"
 									onClick={ () => {
 										setIsModalOpen( false );
+										onClose();
 									} }
 								>
 									{ __( 'Cancel' ) }

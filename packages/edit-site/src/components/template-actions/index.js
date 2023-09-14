@@ -23,7 +23,6 @@ import { store as editSiteStore } from '../../store';
 import isTemplateRemovable from '../../utils/is-template-removable';
 import isTemplateRevertable from '../../utils/is-template-revertable';
 import RenameTemplate from './rename-menu-item';
-import RenamePattern from '../page-patterns/rename-menu-item';
 
 export default function TemplateActions( {
 	postType,
@@ -69,7 +68,6 @@ export default function TemplateActions( {
 				title: template?.title?.raw,
 		  }
 		: template;
-	const RenameComponent = isUserPattern ? RenamePattern : RenameTemplate;
 
 	const deletePattern = async ( pattern ) => {
 		try {
@@ -134,6 +132,12 @@ export default function TemplateActions( {
 		}
 	}
 
+	const shouldDisplayMenu = isEditable || isTemplateRevertable( template );
+
+	if ( ! shouldDisplayMenu ) {
+		return null;
+	}
+
 	return (
 		<DropdownMenu
 			icon={ moreVertical }
@@ -145,8 +149,9 @@ export default function TemplateActions( {
 				<MenuGroup>
 					{ isEditable && (
 						<>
-							<RenameComponent
-								item={ record }
+							<RenameTemplate
+								postId={ postId }
+								postType={ postType }
 								onClose={ onClose }
 							/>
 

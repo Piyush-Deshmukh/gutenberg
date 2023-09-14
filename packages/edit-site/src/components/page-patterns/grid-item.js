@@ -36,11 +36,11 @@ import { store as reusableBlocksStore } from '@wordpress/reusable-blocks';
 /**
  * Internal dependencies
  */
-import RenameMenuItem from './rename-menu-item';
 import DuplicateMenuItem from './duplicate-menu-item';
 import { PATTERNS, TEMPLATE_PARTS, USER_PATTERNS, SYNC_TYPES } from './utils';
 import { store as editSiteStore } from '../../store';
 import { useLink } from '../routes/link';
+import RenameMenuItem from '../template-actions/rename-menu-item';
 
 const templatePartIcons = { header, footer, uncategorized };
 
@@ -238,7 +238,8 @@ function GridItem( { categoryId, item, ...props } ) {
 						<MenuGroup>
 							{ isCustomPattern && ! hasThemeFile && (
 								<RenameMenuItem
-									item={ item }
+									postId={ item.id }
+									postType={ item.type }
 									onClose={ onClose }
 								/>
 							) }
