@@ -242,6 +242,8 @@
  * unquoted values will appear in the output with double-quotes.
  *
  * @since 6.2.0
+ * @since 6.2.1 Fix: Support for various invalid comments; attribute updates are case-insensitive.
+ * @since 6.3.2 Fix: Skip HTML-like content inside rawtext elements such as STYLE.
  */
 class Gutenberg_HTML_Tag_Processor_6_3 {
 	/**
@@ -546,6 +548,10 @@ class Gutenberg_HTML_Tag_Processor_6_3 {
 			}
 
 			// Ensure that the tag closes before the end of the document.
+			if ( $this->bytes_already_parsed >= strlen( $this->html ) ) {
+				return false;
+			}
+
 			$tag_ends_at = strpos( $this->html, '>', $this->bytes_already_parsed );
 			if ( false === $tag_ends_at ) {
 				return false;
@@ -564,7 +570,14 @@ class Gutenberg_HTML_Tag_Processor_6_3 {
 			 * of the tag name as a pre-check avoids a string allocation when it's not needed.
 			 */
 			$t = $this->html[ $this->tag_name_starts_at ];
-			if ( ! $this->is_closing_tag && ( 's' === $t || 'S' === $t || 't' === $t || 'T' === $t ) ) {
+			if (
+				! $this->is_closing_tag &&
+				(
+					'i' === $t || 'I' === $t ||
+					'n' === $t || 'N' === $t ||
+					's' === $t || 'S' === $t ||
+					't' === $t || 'T' === $t
+				) ) {
 				$tag_name = $this->get_tag();
 
 				if ( 'SCRIPT' === $tag_name && ! $this->skip_script_data() ) {
@@ -574,6 +587,25 @@ class Gutenberg_HTML_Tag_Processor_6_3 {
 					( 'TEXTAREA' === $tag_name || 'TITLE' === $tag_name ) &&
 					! $this->skip_rcdata( $tag_name )
 				) {
+					$this->bytes_already_parsed = strlen( $this->html );
+					return false;
+				} elseif (
+					(
+						'IFRAME' === $tag_name ||
+						'NOEMBED' === $tag_name ||
+						'NOFRAMES' === $tag_name ||
+						'NOSCRIPT' === $tag_name ||
+						'STYLE' === $tag_name
+					) &&
+					! $this->skip_rawtext( $tag_name )
+				) {
+					/*
+					 * "XMP" should be here too but its rules are more complicated and require the
+					 * complexity of the HTML Processor (it needs to close out any open P element,
+					 * meaning it can't be skipped here or else the HTML Processor will lose its
+					 * place). For now, it can be ignored as it's a rare HTML tag in practice and
+					 * any normative HTML should be using PRE instead.
+					 */
 					$this->bytes_already_parsed = strlen( $this->html );
 					return false;
 				}
@@ -706,15 +738,33 @@ class Gutenberg_HTML_Tag_Processor_6_3 {
 		return true;
 	}
 
+	/**
+	 * Skips contents of generic rawtext elements.
+	 *
+	 * @since 6.3.2
+	 *
+	 * @see https://html.spec.whatwg.org/#generic-raw-text-element-parsing-algorithm
+	 *
+	 * @param string $tag_name The uppercase tag name which will close the RAWTEXT region.
+	 * @return bool Whether an end to the RAWTEXT region was found before the end of the document.
+	 */
+	private function skip_rawtext( $tag_name ) {
+		/*
+		 * These two functions distinguish themselves on whether character references are
+		 * decoded, and since functionality to read the inner markup isn't supported, it's
+		 * not necessary to implement these two functions separately.
+		 */
+		return $this->skip_rcdata( $tag_name );
+	}
 
 	/**
-	 * Skips contents of title and textarea tags.
+	 * Skips contents of RCDATA elements, namely title and textarea tags.
 	 *
 	 * @since 6.2.0
 	 *
 	 * @see https://html.spec.whatwg.org/multipage/parsing.html#rcdata-state
 	 *
-	 * @param string $tag_name The lowercase tag name which will close the RCDATA region.
+	 * @param string $tag_name The uppercase tag name which will close the RCDATA region.
 	 * @return bool Whether an end to the RCDATA region was found before the end of the document.
 	 */
 	private function skip_rcdata( $tag_name ) {
@@ -947,7 +997,7 @@ class Gutenberg_HTML_Tag_Processor_6_3 {
 
 			if ( '/' === $this->html[ $at + 1 ] ) {
 				$this->is_closing_tag = true;
-				++$at;
+				$at++;
 			} else {
 				$this->is_closing_tag = false;
 			}
@@ -1016,7 +1066,7 @@ class Gutenberg_HTML_Tag_Processor_6_3 {
 					 *
 					 * See https://html.spec.whatwg.org/#parse-error-incorrectly-closed-comment
 					 */
-					--$closer_at; // Pre-increment inside condition below reduces risk of accidental infinite looping.
+					$closer_at--; // Pre-increment inside condition below reduces risk of accidental infinite looping.
 					while ( ++$closer_at < strlen( $html ) ) {
 						$closer_at = strpos( $html, '--', $closer_at );
 						if ( false === $closer_at ) {
@@ -1097,7 +1147,7 @@ class Gutenberg_HTML_Tag_Processor_6_3 {
 			 * See https://html.spec.whatwg.org/#parse-error-missing-end-tag-name
 			 */
 			if ( '>' === $html[ $at + 1 ] ) {
-				++$at;
+				$at++;
 				continue;
 			}
 
@@ -1739,7 +1789,7 @@ class Gutenberg_HTML_Tag_Processor_6_3 {
 	 * @param string $prefix Prefix of requested attribute names.
 	 * @return array|null List of attribute names, or `null` when no tag opener is matched.
 	 */
-	public function get_attribute_names_with_prefix( $prefix ) {
+	function get_attribute_names_with_prefix( $prefix ) {
 		if ( $this->is_closing_tag || null === $this->tag_name_starts_at ) {
 			return null;
 		}
@@ -2282,9 +2332,11 @@ class Gutenberg_HTML_Tag_Processor_6_3 {
 			 * See https://html.spec.whatwg.org/#attributes-3
 			 * See https://html.spec.whatwg.org/#space-separated-tokens
 			 */
-			do {
-				$class_at = strpos( $this->html, $this->sought_class_name, $class_at );
-
+			while (
+				// phpcs:ignore WordPress.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition
+				false !== ( $class_at = strpos( $this->html, $this->sought_class_name, $class_at ) ) &&
+				$class_at < $class_end
+			) {
 				/*
 				 * Verify this class starts at a boundary.
 				 */
@@ -2310,7 +2362,7 @@ class Gutenberg_HTML_Tag_Processor_6_3 {
 				}
 
 				return true;
-			} while ( false !== $class_at && $class_at < $class_end );
+			}
 
 			return false;
 		}
