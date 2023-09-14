@@ -16,6 +16,10 @@ import { store as coreStore } from '@wordpress/core-data';
 import { store as noticesStore } from '@wordpress/notices';
 import { decodeEntities } from '@wordpress/html-entities';
 
+// const noticeMessages = {
+// 	[ TEMPLATE_PARTS ]: {}
+// };
+
 export default function RenameMenuItem( { postType, postId, onClose } ) {
 	const record = useSelect(
 		( select ) =>
@@ -24,22 +28,26 @@ export default function RenameMenuItem( { postType, postId, onClose } ) {
 	);
 	const [ editedTitle, setEditedTitle ] = useState( '' );
 	const [ isModalOpen, setIsModalOpen ] = useState( false );
-
 	const {
 		editEntityRecord,
 		__experimentalSaveSpecifiedEntityEdits: saveSpecifiedEntityEdits,
 	} = useDispatch( coreStore );
 	const { createSuccessNotice, createErrorNotice } =
 		useDispatch( noticesStore );
-	const isTemplate =
-		record?.type === 'wp_template' || record?.type === 'wp_template_part';
+	// @TODO Let's use constants here
+	const isTemplate = record?.type === 'wp_template';
+	const isTemplatePart = record?.type === 'wp_template_part';
 	const isUserPattern = record?.type === 'wp_block';
 
-	if ( isTemplate && ! record.is_custom && isUserPattern ) {
+	if (
+		( isTemplate || isTemplatePart ) &&
+		record?.source !== 'custom' &&
+		! isUserPattern
+	) {
 		return null;
 	}
 
-	async function onTemplateRename( event ) {
+	async function onRename( event ) {
 		event.preventDefault();
 
 		try {
@@ -65,7 +73,7 @@ export default function RenameMenuItem( { postType, postId, onClose } ) {
 
 			// @TODO Should account for patterns.
 			createSuccessNotice(
-				postType === 'wp_template'
+				isTemplate
 					? __( 'Template renamed.' )
 					: __( 'Template part renamed.' ),
 				{
@@ -75,12 +83,9 @@ export default function RenameMenuItem( { postType, postId, onClose } ) {
 			);
 		} catch ( error ) {
 			// @TODO Should account for patterns.
-			const fallbackErrorMessage =
-				postType === 'wp_template'
-					? __( 'An error occurred while renaming the template.' )
-					: __(
-							'An error occurred while renaming the template part.'
-					  );
+			const fallbackErrorMessage = isTemplate
+				? __( 'An error occurred while renaming the template.' )
+				: __( 'An error occurred while renaming the template part.' );
 			const errorMessage =
 				error.message && error.code !== 'unknown_error'
 					? error.message
@@ -113,7 +118,7 @@ export default function RenameMenuItem( { postType, postId, onClose } ) {
 					} }
 					overlayClassName="edit-site-list__rename-modal"
 				>
-					<form onSubmit={ onTemplateRename }>
+					<form onSubmit={ onRename }>
 						<VStack spacing="5">
 							<TextControl
 								__nextHasNoMarginBottom
