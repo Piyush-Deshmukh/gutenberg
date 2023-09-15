@@ -340,12 +340,10 @@ async function loadPostTypeRevisionsEntities() {
 			const namespace = postType?.rest_namespace ?? 'wp/v2';
 			return {
 				kind: 'revisions',
-				getBaseUrl: ( { parent } ) =>
-					`/${ namespace }/${ postType.rest_base }/${ parent }/revisions`,
-				getQueryArgs: ( query ) => {
-					const { parent, ...rest } = query;
-					return rest;
-				},
+				getBaseUrl: ( { name: revisionPostTypeAndParentId } ) =>
+					`/${ namespace }/${ postType.rest_base }/${
+						revisionPostTypeAndParentId.split( ':' )[ 1 ]
+					}/revisions`,
 				baseURLParams: { context: 'view' },
 				name,
 				label: postType.name,

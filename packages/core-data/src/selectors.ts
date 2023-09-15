@@ -520,6 +520,8 @@ export const getEntityRecords = ( <
 ): EntityRecord[] | null => {
 	// Queried data state is prepopulated for all known entities. If this is not
 	// assigned for the given parameters, then it is known to not exist.
+	console.log( 'state.entities.records', state.entities.records );
+
 	const queriedState =
 		state.entities.records?.[ kind ]?.[ name ]?.queriedData;
 	if ( ! queriedState ) {

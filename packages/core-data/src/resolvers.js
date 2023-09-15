@@ -191,9 +191,11 @@ export const getEntityRecords =
 	( kind, name, query = {} ) =>
 	async ( { dispatch } ) => {
 		const configs = await dispatch( getOrLoadEntitiesConfig( kind ) );
+		const splitName = name.split( ':' );
 		const entityConfig = configs.find(
-			( config ) => config.name === name && config.kind === kind
+			( config ) => config.name === splitName[ 0 ] && config.kind === kind
 		);
+
 		if ( ! entityConfig || entityConfig?.__experimentalNoFetch ) {
 			return;
 		}
@@ -204,22 +206,17 @@ export const getEntityRecords =
 			{ exclusive: false }
 		);
 
-		let queryArgs = !! entityConfig.getQueryArgs
-			? entityConfig.getQueryArgs( query )
-			: query;
-
 		try {
-			if ( queryArgs._fields ) {
+			if ( query._fields ) {
 				// If requesting specific fields, items and query association to said
 				// records are stored by ID reference. Thus, fields must always include
 				// the ID.
-				queryArgs = {
-					...queryArgs,
+				query = {
+					...query,
 					_fields: [
 						...new Set( [
-							...( getNormalizedCommaSeparable(
-								queryArgs._fields
-							) || [] ),
+							...( getNormalizedCommaSeparable( query._fields ) ||
+								[] ),
 							entityConfig.key || DEFAULT_ENTITY_KEY,
 						] ),
 					].join(),
@@ -227,20 +224,22 @@ export const getEntityRecords =
 			}
 
 			const baseUrl = !! entityConfig.getBaseUrl
-				? entityConfig.getBaseUrl( query )
+				? entityConfig.getBaseUrl( { kind, name, query } )
 				: entityConfig.baseURL;
 			const path = addQueryArgs( baseUrl, {
 				...entityConfig.baseURLParams,
-				...queryArgs,
+				...query,
 			} );
+
+
 
 			let records = Object.values( await apiFetch( { path } ) );
 			// If we request fields but the result doesn't contain the fields,
 			// explicitly set these fields as "undefined"
 			// that way we consider the query "fullfilled".
-			if ( queryArgs._fields ) {
+			if ( query._fields ) {
 				records = records.map( ( record ) => {
-					queryArgs._fields.split( ',' ).forEach( ( field ) => {
+					query._fields.split( ',' ).forEach( ( field ) => {
 						if ( ! record.hasOwnProperty( field ) ) {
 							record[ field ] = undefined;
 						}
@@ -255,7 +254,7 @@ export const getEntityRecords =
 			// When requesting all fields, the list of results can be used to
 			// resolve the `getEntityRecord` selector in addition to `getEntityRecords`.
 			// See https://github.com/WordPress/gutenberg/pull/26575
-			if ( ! queryArgs?._fields && ! queryArgs.context ) {
+			if ( ! query?._fields && ! query.context ) {
 				const key = entityConfig.key || DEFAULT_ENTITY_KEY;
 				const resolutionsArgs = records
 					.filter( ( record ) => record[ key ] )
