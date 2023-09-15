@@ -25,8 +25,6 @@ import isTemplateRevertable from '../../utils/is-template-revertable';
 import {
 	DataTableRows,
 	DataTableGlobalSearchInput,
-	DataTablePaginationTotalItems,
-	DataTablePaginationNumbers,
 	DataTablePagination,
 	DataTableProvider,
 	DataTableActions,
@@ -144,7 +142,9 @@ export default function PageTemplates() {
 						<VStack>
 							<HStack justify="space-between">
 								<DataTableGlobalSearchInput />
-								<DataTableActions />
+								<DataTableActions
+									showColumnsVisibility={ false }
+								/>
 							</HStack>
 							<DataTableRows
 								ref={ setBulkActionsAnchor }
@@ -153,13 +153,7 @@ export default function PageTemplates() {
 							<TemplatesBulkActions
 								anchor={ bulkActionsAnchor }
 							/>
-							<HStack justify="space-between">
-								<DataTablePaginationTotalItems />
-								<DataTablePaginationNumbers />
-							</HStack>
-							<HStack justify="flex-start">
-								<DataTablePagination />
-							</HStack>
+							<DataTablePagination />
 						</VStack>
 					</DataTableProvider>
 				</div>
