@@ -21,8 +21,8 @@ import { decodeEntities } from '@wordpress/html-entities';
  */
 import {
 	TEMPLATE_POST_TYPE,
-	TEMPLATE_PART_P0ST_TYPE,
-	PATTERN_DEFAULT_POST_TYPE,
+	TEMPLATE_PART_POST_TYPE,
+	PATTERN_POST_TYPE,
 	TEMPLATE_CUSTOM_SOURCE,
 	POST_TYPE_LABELS,
 } from '../../utils/constants';
@@ -43,8 +43,8 @@ export default function RenameMenuItem( { postType, postId, onClose } ) {
 		useDispatch( noticesStore );
 
 	const isTemplate = record?.type === TEMPLATE_POST_TYPE;
-	const isTemplatePart = record?.type === TEMPLATE_PART_P0ST_TYPE;
-	const isUserPattern = record?.type === PATTERN_DEFAULT_POST_TYPE;
+	const isTemplatePart = record?.type === TEMPLATE_PART_POST_TYPE;
+	const isUserPattern = record?.type === PATTERN_POST_TYPE;
 
 	if (
 		( isTemplate || isTemplatePart ) &&
@@ -80,9 +80,11 @@ export default function RenameMenuItem( { postType, postId, onClose } ) {
 
 			createSuccessNotice(
 				sprintf(
-					// translators: %s is a post type label, e.g., Template, Template Part or Pattern.
-					__( '%s renamed.' ),
-					POST_TYPE_LABELS[ postType ] ?? POST_TYPE_LABELS.wp_template
+					// translators: %1$s is a post type label, e.g., Template, Template Part or Pattern. %2$s is the new title.
+					__( '%1$s renamed to "%2$s".' ),
+					POST_TYPE_LABELS[ postType ] ??
+						POST_TYPE_LABELS.wp_template,
+					editedTitle
 				),
 				{
 					type: 'snackbar',

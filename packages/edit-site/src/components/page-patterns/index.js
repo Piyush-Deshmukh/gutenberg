@@ -10,7 +10,7 @@ import { getQueryArgs } from '@wordpress/url';
  */
 import {
 	PATTERN_DEFAULT_CATEGORY,
-	PATTERN_DEFAULT_POST_TYPE,
+	PATTERN_POST_TYPE,
 } from '../../utils/constants';
 import Page from '../page';
 import PatternsList from './patterns-list';
@@ -21,7 +21,7 @@ const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
 
 export default function PagePatterns() {
 	const { categoryType, categoryId } = getQueryArgs( window.location.href );
-	const type = categoryType || PATTERN_DEFAULT_POST_TYPE;
+	const type = categoryType || PATTERN_POST_TYPE;
 	const category = categoryId || PATTERN_DEFAULT_CATEGORY;
 	const settings = usePatternSettings();
 

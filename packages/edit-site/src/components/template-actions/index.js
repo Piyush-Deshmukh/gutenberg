@@ -22,11 +22,11 @@ import { store as reusableBlocksStore } from '@wordpress/reusable-blocks';
 import { store as editSiteStore } from '../../store';
 import isTemplateRemovable from '../../utils/is-template-removable';
 import isTemplateRevertable from '../../utils/is-template-revertable';
-import RenameTemplate from './rename-menu-item';
+import RenameMenuItem from './rename-menu-item';
 import {
 	TEMPLATE_POST_TYPE,
-	TEMPLATE_PART_P0ST_TYPE,
-	PATTERN_DEFAULT_POST_TYPE,
+	TEMPLATE_PART_POST_TYPE,
+	PATTERN_POST_TYPE,
 	POST_TYPE_LABELS,
 } from '../../utils/constants';
 
@@ -49,14 +49,17 @@ export default function TemplateActions( {
 	const { __experimentalDeleteReusableBlock } =
 		useDispatch( reusableBlocksStore );
 	const isRemovable = isTemplateRemovable( record );
-
-	const isUserPattern = record?.type === PATTERN_DEFAULT_POST_TYPE;
 	// Only custom patterns or custom template parts can be renamed or deleted.
-	const isTemplate =
-		record?.type === TEMPLATE_POST_TYPE ||
-		record?.type === TEMPLATE_PART_P0ST_TYPE;
+	const isUserPattern = record?.type === PATTERN_POST_TYPE;
+	const isTemplate = record?.type === TEMPLATE_POST_TYPE;
+	const isTemplatePart = record?.type === TEMPLATE_PART_POST_TYPE;
 
-	if ( ! isTemplate && ! isRemovable && ! isUserPattern ) {
+	if (
+		! isRemovable &&
+		! isTemplatePart &&
+		! isTemplate &&
+		! isUserPattern
+	) {
 		return null;
 	}
 
@@ -113,7 +116,8 @@ export default function TemplateActions( {
 			const fallbackErrorMessage = sprintf(
 				// translators: %s is a post type label, e.g., Template, Template Part or Pattern.
 				__( 'An error occurred while reverting the %s.' ),
-				POST_TYPE_LABELS[ postType ] ?? POST_TYPE_LABELS.wp_template
+				POST_TYPE_LABELS[ postType ] ??
+					POST_TYPE_LABELS[ TEMPLATE_POST_TYPE ]
 			);
 
 			const errorMessage =
@@ -142,20 +146,20 @@ export default function TemplateActions( {
 				<MenuGroup>
 					{ isEditable && (
 						<>
-							<RenameTemplate
+							<RenameMenuItem
 								postId={ postId }
 								postType={ postType }
 								onClose={ onClose }
 							/>
-
 							<DeleteMenuItem
+								isDestructive={ true }
 								onRemove={ () => {
 									deleteItem( record );
 									onRemove?.();
 									onClose();
 								} }
 								title={ decodeEntities(
-									record.title.rendered
+									record.title.rendered || record.title.raw
 								) }
 							/>
 						</>

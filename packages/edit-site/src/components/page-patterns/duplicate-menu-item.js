@@ -12,12 +12,12 @@ import { privateApis as routerPrivateApis } from '@wordpress/router';
  * Internal dependencies
  */
 import {
-	TEMPLATE_PARTS,
-	PATTERNS,
-	SYNC_TYPES,
-	USER_PATTERNS,
-	USER_PATTERN_CATEGORY,
-} from './utils';
+	TEMPLATE_PART_POST_TYPE,
+	PATTERN_THEME_TYPE,
+	PATTERN_SYNC_STATUSES,
+	PATTERN_POST_TYPE,
+	PATTERN_DEFAULT_CATEGORY,
+} from '../../utils/constants';
 import {
 	useExistingTemplateParts,
 	getUniqueTemplatePartTitle,
@@ -28,12 +28,12 @@ import { unlock } from '../../lock-unlock';
 const { useHistory } = unlock( routerPrivateApis );
 
 function getPatternMeta( item ) {
-	if ( item.type === PATTERNS ) {
-		return { wp_pattern_sync_status: SYNC_TYPES.unsynced };
+	if ( item.type === PATTERN_THEME_TYPE ) {
+		return { wp_pattern_sync_status: PATTERN_SYNC_STATUSES.unsynced };
 	}
 
 	const syncStatus = item.reusableBlock.wp_pattern_sync_status;
-	const isUnsynced = syncStatus === SYNC_TYPES.unsynced;
+	const isUnsynced = syncStatus === PATTERN_SYNC_STATUSES.unsynced;
 
 	return {
 		...item.reusableBlock.meta,
@@ -88,9 +88,9 @@ export default function DuplicateMenuItem( {
 			);
 
 			history.push( {
-				postType: TEMPLATE_PARTS,
+				postType: TEMPLATE_PART_POST_TYPE,
 				postId: result?.id,
-				categoryType: TEMPLATE_PARTS,
+				categoryType: TEMPLATE_PART_POST_TYPE,
 				categoryId,
 			} );
 
@@ -113,7 +113,7 @@ export default function DuplicateMenuItem( {
 
 	async function createPattern() {
 		try {
-			const isThemePattern = item.type === PATTERNS;
+			const isThemePattern = item.type === PATTERN_THEME_TYPE;
 			const title = sprintf(
 				/* translators: %s: Existing pattern title */
 				__( '%s (Copy)' ),
@@ -147,9 +147,9 @@ export default function DuplicateMenuItem( {
 			);
 
 			history.push( {
-				categoryType: USER_PATTERNS,
-				categoryId: USER_PATTERN_CATEGORY,
-				postType: USER_PATTERNS,
+				categoryType: PATTERN_POST_TYPE,
+				categoryId: PATTERN_DEFAULT_CATEGORY,
+				postType: PATTERN_POST_TYPE,
 				postId: result?.id,
 			} );
 
@@ -169,7 +169,9 @@ export default function DuplicateMenuItem( {
 	}
 
 	const createItem =
-		item.type === TEMPLATE_PARTS ? createTemplatePart : createPattern;
+		item.type === TEMPLATE_PART_POST_TYPE
+			? createTemplatePart
+			: createPattern;
 
 	return <MenuItem onClick={ createItem }>{ label }</MenuItem>;
 }
