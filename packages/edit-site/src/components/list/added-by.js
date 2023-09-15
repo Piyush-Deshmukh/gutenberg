@@ -21,7 +21,7 @@ import { _x } from '@wordpress/i18n';
 
 /** @typedef {'wp_template'|'wp_template_part'} TemplateType */
 
-/** @type {TemplateType} */
+/** @type {TemplateType[]} */
 const TEMPLATE_POST_TYPE_NAMES = [ 'wp_template', 'wp_template_part' ];
 
 /**
@@ -154,10 +154,15 @@ function AvatarImage( { imageUrl } ) {
 
 /**
  * @param {Object}       props
- * @param {TemplateType} props.postType The template post type.
- * @param {number}       props.postId   The template post id.
+ * @param {TemplateType} props.postType             The template post type.
+ * @param {number}       props.postId               The template post id.
+ * @param {boolean}      props.showIsCustomizedInfo
  */
-export default function AddedBy( { postType, postId } ) {
+export default function AddedBy( {
+	postType,
+	postId,
+	showIsCustomizedInfo = true,
+} ) {
 	const { text, icon, imageUrl, isCustomized } = useAddedBy(
 		postType,
 		postId
@@ -174,7 +179,7 @@ export default function AddedBy( { postType, postId } ) {
 			) }
 			<span>
 				{ text }
-				{ isCustomized && (
+				{ showIsCustomizedInfo && isCustomized && (
 					<span className="edit-site-list-added-by__customized-info">
 						{ postType === 'wp_template'
 							? _x( 'Customized', 'template' )
