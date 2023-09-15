@@ -23,6 +23,12 @@ import { store as editSiteStore } from '../../store';
 import isTemplateRemovable from '../../utils/is-template-removable';
 import isTemplateRevertable from '../../utils/is-template-revertable';
 import RenameTemplate from './rename-menu-item';
+import {
+	TEMPLATE_POST_TYPE,
+	TEMPLATE_PART_P0ST_TYPE,
+	PATTERN_DEFAULT_POST_TYPE,
+	POST_TYPE_LABELS,
+} from '../../utils/constants';
 
 export default function TemplateActions( {
 	postType,
@@ -31,7 +37,7 @@ export default function TemplateActions( {
 	toggleProps,
 	onRemove,
 } ) {
-	const template = useSelect(
+	const record = useSelect(
 		( select ) =>
 			select( coreStore ).getEntityRecord( 'postType', postType, postId ),
 		[ postType, postId ]
@@ -42,32 +48,19 @@ export default function TemplateActions( {
 		useDispatch( noticesStore );
 	const { __experimentalDeleteReusableBlock } =
 		useDispatch( reusableBlocksStore );
-	const isRemovable = isTemplateRemovable( template );
+	const isRemovable = isTemplateRemovable( record );
 
-	const isUserPattern = template?.type === 'wp_block';
+	const isUserPattern = record?.type === PATTERN_DEFAULT_POST_TYPE;
 	// Only custom patterns or custom template parts can be renamed or deleted.
-	// @TODO Maybe abstract constants and utils in packages/edit-site/src/components/page-patterns/utils.js.
 	const isTemplate =
-		template?.type === 'wp_template' ||
-		template?.type === 'wp_template_part';
+		record?.type === TEMPLATE_POST_TYPE ||
+		record?.type === TEMPLATE_PART_P0ST_TYPE;
 
 	if ( ! isTemplate && ! isRemovable && ! isUserPattern ) {
 		return null;
 	}
 
 	const isEditable = isUserPattern || isRemovable;
-
-	/*
-	 * @TODO This is because packages/edit-site/src/components/template-actions/rename-menu-item.js
-	 * and packages/edit-site/src/components/page-patterns/rename-menu-item.js are slighly different.
-	 * They should be consolidated.
-	 */
-	const record = isUserPattern
-		? {
-				...template,
-				title: template?.title?.raw,
-		  }
-		: template;
 
 	const deletePattern = async ( pattern ) => {
 		try {
@@ -102,7 +95,7 @@ export default function TemplateActions( {
 
 	async function revertAndSaveTemplate( item ) {
 		try {
-			await revertTemplate( template, { allowUndo: false } );
+			await revertTemplate( record, { allowUndo: false } );
 			await saveEditedEntityRecord( 'postType', item.type, item.id );
 
 			createSuccessNotice(
@@ -117,12 +110,12 @@ export default function TemplateActions( {
 				}
 			);
 		} catch ( error ) {
-			const fallbackErrorMessage =
-				template.type === 'wp_template'
-					? __( 'An error occurred while reverting the template.' )
-					: __(
-							'An error occurred while reverting the template part.'
-					  );
+			const fallbackErrorMessage = sprintf(
+				// translators: %s is a post type label, e.g., Template, Template Part or Pattern.
+				__( 'An error occurred while reverting the %s.' ),
+				POST_TYPE_LABELS[ postType ] ?? POST_TYPE_LABELS.wp_template
+			);
+
 			const errorMessage =
 				error.message && error.code !== 'unknown_error'
 					? error.message
@@ -132,7 +125,7 @@ export default function TemplateActions( {
 		}
 	}
 
-	const shouldDisplayMenu = isEditable || isTemplateRevertable( template );
+	const shouldDisplayMenu = isEditable || isTemplateRevertable( record );
 
 	if ( ! shouldDisplayMenu ) {
 		return null;
@@ -161,7 +154,9 @@ export default function TemplateActions( {
 									onRemove?.();
 									onClose();
 								} }
-								title={ record.title.rendered || record.title }
+								title={ decodeEntities(
+									record.title.rendered
+								) }
 							/>
 						</>
 					) }

@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 import {
@@ -16,9 +16,16 @@ import { store as coreStore } from '@wordpress/core-data';
 import { store as noticesStore } from '@wordpress/notices';
 import { decodeEntities } from '@wordpress/html-entities';
 
-// const noticeMessages = {
-// 	[ TEMPLATE_PARTS ]: {}
-// };
+/**
+ * Internal dependencies
+ */
+import {
+	TEMPLATE_POST_TYPE,
+	TEMPLATE_PART_P0ST_TYPE,
+	PATTERN_DEFAULT_POST_TYPE,
+	TEMPLATE_CUSTOM_SOURCE,
+	POST_TYPE_LABELS,
+} from '../../utils/constants';
 
 export default function RenameMenuItem( { postType, postId, onClose } ) {
 	const record = useSelect(
@@ -34,14 +41,14 @@ export default function RenameMenuItem( { postType, postId, onClose } ) {
 	} = useDispatch( coreStore );
 	const { createSuccessNotice, createErrorNotice } =
 		useDispatch( noticesStore );
-	// @TODO Let's use constants here
-	const isTemplate = record?.type === 'wp_template';
-	const isTemplatePart = record?.type === 'wp_template_part';
-	const isUserPattern = record?.type === 'wp_block';
+
+	const isTemplate = record?.type === TEMPLATE_POST_TYPE;
+	const isTemplatePart = record?.type === TEMPLATE_PART_P0ST_TYPE;
+	const isUserPattern = record?.type === PATTERN_DEFAULT_POST_TYPE;
 
 	if (
 		( isTemplate || isTemplatePart ) &&
-		record?.source !== 'custom' &&
+		record?.source !== TEMPLATE_CUSTOM_SOURCE &&
 		! isUserPattern
 	) {
 		return null;
@@ -71,21 +78,23 @@ export default function RenameMenuItem( { postType, postId, onClose } ) {
 				}
 			);
 
-			// @TODO Should account for patterns.
 			createSuccessNotice(
-				isTemplate
-					? __( 'Template renamed.' )
-					: __( 'Template part renamed.' ),
+				sprintf(
+					// translators: %s is a post type label, e.g., Template, Template Part or Pattern.
+					__( '%s renamed.' ),
+					POST_TYPE_LABELS[ postType ] ?? POST_TYPE_LABELS.wp_template
+				),
 				{
 					type: 'snackbar',
 					id: 'template-rename-success',
 				}
 			);
 		} catch ( error ) {
-			// @TODO Should account for patterns.
-			const fallbackErrorMessage = isTemplate
-				? __( 'An error occurred while renaming the template.' )
-				: __( 'An error occurred while renaming the template part.' );
+			const fallbackErrorMessage = sprintf(
+				// translators: %s is a post type label, e.g., Template, Template Part or Pattern.
+				__( 'An error occurred while renaming the %s.' ),
+				POST_TYPE_LABELS[ postType ] ?? POST_TYPE_LABELS.wp_template
+			);
 			const errorMessage =
 				error.message && error.code !== 'unknown_error'
 					? error.message
