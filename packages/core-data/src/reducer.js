@@ -231,7 +231,7 @@ function entity( entityConfig ) {
 			( action ) =>
 				action.name &&
 				action.kind &&
-				action.name.split( ':' )[ 0 ] === entityConfig.name &&
+				action.name === entityConfig.name &&
 				action.kind === entityConfig.kind
 		),
 

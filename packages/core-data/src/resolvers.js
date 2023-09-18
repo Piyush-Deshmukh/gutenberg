@@ -191,11 +191,9 @@ export const getEntityRecords =
 	( kind, name, query = {} ) =>
 	async ( { dispatch } ) => {
 		const configs = await dispatch( getOrLoadEntitiesConfig( kind ) );
-		const splitName = name.split( ':' );
 		const entityConfig = configs.find(
-			( config ) => config.name === splitName[ 0 ] && config.kind === kind
+			( config ) => config.name === name && config.kind === kind
 		);
-
 		if ( ! entityConfig || entityConfig?.__experimentalNoFetch ) {
 			return;
 		}
@@ -223,15 +221,10 @@ export const getEntityRecords =
 				};
 			}
 
-			const baseUrl = !! entityConfig.getBaseUrl
-				? entityConfig.getBaseUrl( { kind, name, query } )
-				: entityConfig.baseURL;
-			const path = addQueryArgs( baseUrl, {
+			const path = addQueryArgs( entityConfig.baseURL, {
 				...entityConfig.baseURLParams,
 				...query,
 			} );
-
-
 
 			let records = Object.values( await apiFetch( { path } ) );
 			// If we request fields but the result doesn't contain the fields,

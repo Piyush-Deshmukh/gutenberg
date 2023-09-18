@@ -227,7 +227,6 @@ export const rootEntitiesConfig = [
 
 export const additionalEntityConfigLoaders = [
 	{ kind: 'postType', loadEntities: loadPostTypeEntities },
-	{ kind: 'revisions', loadEntities: loadPostTypeRevisionsEntities },
 	{ kind: 'taxonomy', loadEntities: loadTaxonomyEntities },
 ];
 
@@ -320,42 +319,6 @@ async function loadPostTypeEntities() {
 			getSyncObjectId: ( id ) => id,
 		};
 	} );
-}
-
-/**
- * Returns the list of post type revisions entities.
- *
- * @return {Promise} Entities promise
- */
-async function loadPostTypeRevisionsEntities() {
-	const postTypes = await apiFetch( {
-		path: '/wp/v2/types?context=edit',
-	} );
-	return Object.entries( postTypes ?? {} )
-		.filter( ( [ , postType ] ) => !! postType?.supports?.revisions )
-		.map( ( [ name, postType ] ) => {
-			const isTemplate = [ 'wp_template', 'wp_template_part' ].includes(
-				name
-			);
-			const namespace = postType?.rest_namespace ?? 'wp/v2';
-			return {
-				kind: 'revisions',
-				getBaseUrl: ( { name: revisionPostTypeAndParentId } ) =>
-					`/${ namespace }/${ postType.rest_base }/${
-						revisionPostTypeAndParentId.split( ':' )[ 1 ]
-					}/revisions`,
-				baseURLParams: { context: 'view' },
-				name,
-				label: postType.name,
-				getTitle: ( record ) =>
-					record?.title?.rendered ||
-					record?.title ||
-					( isTemplate
-						? capitalCase( record.slug ?? '' )
-						: String( record.id ) ),
-				__unstable_rest_base: postType.rest_base,
-			};
-		} );
 }
 
 /**
