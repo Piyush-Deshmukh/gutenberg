@@ -520,11 +520,22 @@ export const getEntityRecords = ( <
 ): EntityRecord[] | null => {
 	// Queried data state is prepopulated for all known entities. If this is not
 	// assigned for the given parameters, then it is known to not exist.
-	const queriedState =
-		state.entities.records?.[ kind ]?.[ name ]?.queriedData;
+	// @TODO Create predictable parsing rules for names like post:[key]:revisions.
+	const splitName = name.split( ':' );
+	let queriedState = null;
+
+	if ( splitName?.[ 2 ] === 'revisions' ) {
+		queriedState =
+			state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions?.[
+				splitName?.[ 1 ]
+			];
+	} else {
+		queriedState = state.entities.records?.[ kind ]?.[ name ]?.queriedData;
+	}
 	if ( ! queriedState ) {
 		return null;
 	}
+	// @TODO this is not returning anything yet.
 	return getQueriedItems( queriedState, query );
 } ) as GetEntityRecords;
 

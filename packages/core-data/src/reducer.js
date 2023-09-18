@@ -231,7 +231,8 @@ function entity( entityConfig ) {
 			( action ) =>
 				action.name &&
 				action.kind &&
-				action.name === entityConfig.name &&
+				// @TODO Create predictable parsing rules for names like post:[key]:revisions.
+				action.name.split( ':' )[ 0 ] === entityConfig.name &&
 				action.kind === entityConfig.kind
 		),
 
@@ -245,7 +246,10 @@ function entity( entityConfig ) {
 	] )(
 		combineReducers( {
 			queriedData: queriedDataReducer,
-
+			// @TODO can this be filtered by supports above?
+			...( entityConfig?.supports?.revisions
+				? { revisions: queriedDataReducer }
+				: {} ),
 			edits: ( state = {}, action ) => {
 				switch ( action.type ) {
 					case 'RECEIVE_ITEMS':

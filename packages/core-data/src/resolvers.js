@@ -189,11 +189,17 @@ export const getEditedEntityRecord = forwardResolver( 'getEntityRecord' );
  */
 export const getEntityRecords =
 	( kind, name, query = {} ) =>
-	async ( { dispatch } ) => {
+	async ( { dispatch, select } ) => {
 		const configs = await dispatch( getOrLoadEntitiesConfig( kind ) );
+		// @TODO Create predictable parsing rules for names like post:[key]:revisions.
+		const splitName = name.split( ':' )[ 0 ];
+
 		const entityConfig = configs.find(
-			( config ) => config.name === name && config.kind === kind
+			( config ) => config.name === splitName && config.kind === kind
 		);
+		const isRevisionEntityRecords =
+			entityConfig?.supports?.revisions &&
+			name.split( ':' )?.[ 2 ] === 'revisions';
 		if ( ! entityConfig || entityConfig?.__experimentalNoFetch ) {
 			return;
 		}
@@ -221,12 +227,36 @@ export const getEntityRecords =
 				};
 			}
 
-			const path = addQueryArgs( entityConfig.baseURL, {
-				...entityConfig.baseURLParams,
-				...query,
-			} );
+			// @TODO Create predictable URL building rules for names like post:[key]:revisions.
+			// @TODO Possibly `entityConfig.getRevisionsUrl( { name } )?
+			let path, records;
+			if ( isRevisionEntityRecords ) {
+				const [ parentName, parentKey ] = name.split( ':' );
+				const parent = await select.getEntityRecord(
+					kind,
+					parentName,
+					parentKey
+				);
+				const revisionsURL =
+					parent?._links?.[ 'version-history' ]?.[ 0 ]?.href;
+				const url = addQueryArgs( revisionsURL, {
+					...{
+						// @TODO Default query params for revisions should be defined in the entity config?
+						context: 'view',
+						order: 'desc',
+						orderby: 'date',
+					},
+					...query,
+				} );
+				records = Object.values( await apiFetch( { url } ) );
+			} else {
+				path = addQueryArgs( entityConfig.baseURL, {
+					...entityConfig.baseURLParams,
+					...query,
+				} );
+				records = Object.values( await apiFetch( { path } ) );
+			}
 
-			let records = Object.values( await apiFetch( { path } ) );
 			// If we request fields but the result doesn't contain the fields,
 			// explicitly set these fields as "undefined"
 			// that way we consider the query "fullfilled".
@@ -242,7 +272,28 @@ export const getEntityRecords =
 				} );
 			}
 
-			dispatch.receiveEntityRecords( kind, name, records, query );
+			// @TODO just dispatching here to send the default query params.
+			if ( isRevisionEntityRecords ) {
+				dispatch( {
+					type: 'RECEIVE_ITEMS',
+					kind,
+					name,
+					items: records,
+					query: {
+						...{
+							// @TODO Default query params for revisions should be defined in the entity config?
+							order: 'desc',
+							orderby: 'date',
+						},
+						...query,
+					},
+					invalidateCache: false,
+				} );
+			} else {
+				dispatch.receiveEntityRecords( kind, name, records, query );
+			}
+
+
 
 			// When requesting all fields, the list of results can be used to
 			// resolve the `getEntityRecord` selector in addition to `getEntityRecords`.
