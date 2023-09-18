@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * External dependencies
  */
@@ -163,16 +162,11 @@ export default function AddedBy( {
 	postId,
 	showIsCustomizedInfo = true,
 } ) {
-	const { text, imageUrl, isCustomized } = useAddedBy(
-		postType,
-		postId
-	);
+	const { text, imageUrl, isCustomized } = useAddedBy( postType, postId );
 
 	return (
 		<HStack alignment="left">
-			{ imageUrl ?
-				<AvatarImage imageUrl={ imageUrl } />
-			: '' }
+			{ !! imageUrl && <AvatarImage imageUrl={ imageUrl } /> }
 			<span>
 				{ text }
 				{ showIsCustomizedInfo && isCustomized && (
