@@ -68,6 +68,7 @@ interface EntityState< EntityRecord extends ET.EntityRecord > {
 	>;
 	deleting: Record< string, Partial< { pending: boolean; error: Error } > >;
 	queriedData: QueriedData;
+	revisions: QueriedData;
 }
 
 interface EntityConfig {
@@ -520,22 +521,51 @@ export const getEntityRecords = ( <
 ): EntityRecord[] | null => {
 	// Queried data state is prepopulated for all known entities. If this is not
 	// assigned for the given parameters, then it is known to not exist.
+	// @TODO this is a mess.
 	// @TODO Create predictable parsing rules for names like post:[key]:revisions.
 	const splitName = name.split( ':' );
-	let queriedState = null;
-
 	if ( splitName?.[ 2 ] === 'revisions' ) {
-		queriedState =
-			state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions?.[
-				splitName?.[ 1 ]
+		const queriedStateRevisions =
+			state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions[
+				splitName[ 1 ]
 			];
-	} else {
-		queriedState = state.entities.records?.[ kind ]?.[ name ]?.queriedData;
+		if ( ! queriedStateRevisions ) {
+			return null;
+		}
+		const extraQueryParams = {
+			// @TODO Default query params for revisions should be defined in the entity config?
+			order: 'desc',
+			orderby: 'date',
+			// @TODO check if this is the default for revisions (should be view?). Is there anything else?
+			context: 'view',
+		};
+		const test = getQueriedItems(
+			queriedStateRevisions,
+			{
+				...{
+					// @TODO Default query params for revisions should be defined in the entity config?
+					order: 'desc',
+					orderby: 'date',
+					// @TODO check if this is the default for revisions (should be view?). Is there anything else?
+					context: 'default',
+				},
+				...query,
+			},
+			splitName[ 1 ]
+		);
+
+		return getQueriedItems( queriedStateRevisions, {
+			...query,
+			...extraQueryParams,
+		} );
 	}
+
+	const queriedState =
+		state.entities.records?.[ kind ]?.[ name ]?.queriedData;
 	if ( ! queriedState ) {
 		return null;
 	}
-	// @TODO this is not returning anything yet.
+
 	return getQueriedItems( queriedState, query );
 } ) as GetEntityRecords;
 

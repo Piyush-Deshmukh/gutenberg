@@ -14,7 +14,10 @@ import { createUndoManager } from '@wordpress/undo-manager';
  * Internal dependencies
  */
 import { ifMatchingAction, replaceAction } from './utils';
-import { reducer as queriedDataReducer } from './queried-data';
+import {
+	reducer as queriedDataReducer,
+	revisionsQueriedDataReducer,
+} from './queried-data';
 import { rootEntitiesConfig, DEFAULT_ENTITY_KEY } from './entities';
 
 /** @typedef {import('./types').AnyFunction} AnyFunction */
@@ -246,9 +249,10 @@ function entity( entityConfig ) {
 	] )(
 		combineReducers( {
 			queriedData: queriedDataReducer,
-			// @TODO can this be filtered by supports above?
+			// @TODO can this be filtered by supports above or elsewhere?
+			// @TODO  We only want to add to state tree if revisions are supported by post type.
 			...( entityConfig?.supports?.revisions
-				? { revisions: queriedDataReducer }
+				? { revisions: revisionsQueriedDataReducer }
 				: {} ),
 			edits: ( state = {}, action ) => {
 				switch ( action.type ) {
