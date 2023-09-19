@@ -16,6 +16,7 @@ import CreateTemplatePartModal from '../create-template-part-modal';
 import SidebarButton from '../sidebar-button';
 import { unlock } from '../../lock-unlock';
 import { store as editSiteStore } from '../../store';
+import { TEMPLATE_POST_TYPE, PATTERN_TYPES } from '../../utils/constants';
 
 const { useHistory } = unlock( routerPrivateApis );
 const { CreatePatternModal } = unlock( editPatternsPrivateApis );
@@ -35,8 +36,8 @@ export default function AddNewPattern() {
 
 		history.push( {
 			postId: pattern.id,
-			postType: 'wp_block',
-			categoryType: 'wp_block',
+			postType: PATTERN_TYPES.user,
+			categoryType: PATTERN_TYPES.user,
 			categoryId,
 			canvas: 'edit',
 		} );
@@ -48,7 +49,7 @@ export default function AddNewPattern() {
 		// Navigate to the created template part editor.
 		history.push( {
 			postId: templatePart.id,
-			postType: 'wp_template_part',
+			postType: TEMPLATE_POST_TYPE,
 			canvas: 'edit',
 		} );
 	}

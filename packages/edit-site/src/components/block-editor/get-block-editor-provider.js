@@ -3,7 +3,11 @@
  */
 import DefaultBlockEditor from './providers/default-block-editor-provider';
 import NavigationBlockEditor from './providers/navigation-block-editor-provider';
-
+import {
+	TEMPLATE_POST_TYPE,
+	NAVIGATION_POST_TYPE,
+	TEMPLATE_PART_POST_TYPE,
+} from '../../utils/constants';
 /**
  * Factory to isolate choosing the appropriate block editor
  * component to handle a given entity type.
@@ -15,11 +19,11 @@ export default function getBlockEditorProvider( entityType ) {
 	let Provider = null;
 
 	switch ( entityType ) {
-		case 'wp_navigation':
+		case NAVIGATION_POST_TYPE:
 			Provider = NavigationBlockEditor;
 			break;
-		case 'wp_template':
-		case 'wp_template_part':
+		case TEMPLATE_POST_TYPE:
+		case TEMPLATE_PART_POST_TYPE:
 		default:
 			Provider = DefaultBlockEditor;
 			break;
